@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Rainbow Word Sentences 🐆</title>
+<style>
+  :root{ --bg:#2a1a0c; --card:#3a240f; --ink:#fff7e6; --accent:#ffb32a; --muted:#ffd166; --spot:#1b120b; --grass:#7ad36b; }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(120deg,#2e1c0e,#4a2e12);color:var(--ink);
+       font-family:ui-rounded,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;position:relative}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.14;z-index:0;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(0,0,0,.25) 0 10px, transparent 11px) 0 0/90px 90px,
+      radial-gradient(circle at 70% 60%, rgba(0,0,0,.22) 0 8px, transparent 9px) 30px 40px/100px 100px,
+      radial-gradient(circle at 40% 80%, rgba(0,0,0,.2) 0 7px, transparent 8px) 10px 20px/110px 110px;
+  }
+  .wrap{position:relative;z-index:1;max-width:900px;margin:auto;padding:18px;display:grid;gap:14px}
+  .card{background:linear-gradient(180deg,#3f2a13,#2f1e0d 60%);border:2px dashed rgba(255,255,255,.08);
+        border-radius:18px;padding:16px;box-shadow:0 14px 32px rgba(0,0,0,.45)}
+  h1{margin:.2rem 0;font-size:clamp(22px,3.2vw,34px);letter-spacing:.5px}
+  .stage{display:grid;gap:12px;position:relative}
+  .big{font-size:clamp(48px,10vw,110px);text-align:center;font-weight:900;letter-spacing:1px;
+       background:linear-gradient(90deg,#ffe08a,#ffc046,#ff9f1c);
+       -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sent{font-size:clamp(24px,3.8vw,34px);text-align:center}
+  mark{background:#ffd76a33;border:2px solid #ffcf4f77;border-radius:.35em;padding:.05em .25em}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center}
+  .legend{display:inline-flex;align-items:center;gap:8px}
+  .swatch{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.2);display:inline-block}
+  button{appearance:none;border:none;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer;
+          background:var(--accent);color:#2a1a00;box-shadow:0 6px 0 #c18716;transition:transform .05s, filter .2s}
+  .xl{font-size:1.15rem;padding:16px 22px;border-radius:16px;min-width:140px}
+  #pause{font-weight:900}
+  button:hover{filter:brightness(1.05)}
+  button:active{transform:translateY(2px);box-shadow:0 4px 0 #c18716}
+  .ghost{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.25);box-shadow:none}
+  .sec{background:var(--muted);color:#3a240f;box-shadow:0 6px 0 #d6a84a}
+  .meta{opacity:.85;text-align:center}
+  textarea,input,select{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);
+                        background:#2a1a0c;color:var(--ink);font-size:1rem}
+  .grid{display:grid;gap:10px}
+  .two{grid-template-columns:1.2fr .8fr}
+  .pill{padding:6px 10px;border-radius:999px;background:#4a2e15;display:inline-flex;gap:6px;align-items:center;border:1px solid rgba(255,255,255,.1);position:relative}
+  .pill::after{content:"🐾"; position:absolute; right:-12px; top:-10px; font-size:18px; transform:rotate(-10deg)}
+  .bar{height:12px;background:#3b2a17;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.1)}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#6be07a,#b8f26f)}
+
+  /* Fun animations */
+  @keyframes popIn{0%{transform:scale(.6) rotate(-2deg)}60%{transform:scale(1.08) rotate(1deg)}100%{transform:scale(1)}}
+  .big.pop{animation:popIn 450ms cubic-bezier(.2,.8,.2,1)}
+  .big.colorized{background:none!important;color:var(--wordColor);text-shadow:0 2px 0 rgba(0,0,0,.18),0 16px 36px rgba(0,0,0,.25)}
+  @keyframes fadeSlide{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .sent.fade{animation:fadeSlide 350ms ease}
+  @keyframes stripe{from{background-position:0 0,0 0}to{background-position:0 0,20px 0}}
+  .running .bar>i{background-image:linear-gradient(90deg,#6be07a,#b8f26f),repeating-linear-gradient(45deg,rgba(255,255,255,.18) 0 10px,transparent 10px 20px);background-size:auto,20px 20px;animation:stripe 1s linear infinite}
+
+  /* Stickers */
+  #stickers{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .sticker{position:absolute;font-size:38px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));opacity:0;transform:translateY(10px) scale(.9)}
+  @keyframes floatUp{0%{opacity:0;transform:translateY(12px) scale(.9)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translateY(-22px) scale(1)} }
+  .sticker.run{animation:floatUp 1700ms ease-out forwards}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section id="mainScreen" class="card stage">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h1>Rainbow Word Sentences 🐆</h1>
+      <div class="row" style="gap:10px">
+        <div class="pill">Word <span id="idx">0</span>/<span id="total">0</span></div>
+        <button id="settingsBtn" class="ghost">Settings ⚙️</button>
+      </div>
+    </div>
+
+    <div class="big" id="word">Press Start</div>
+    <div class="sent" id="sentence">The sentence will appear here.</div>
+    <div id="stickers"></div>
+
+    <div class="row">
+      <button id="start" class="sec">Start ▶</button>
+      <button id="prev" class="ghost">⏮ Previous</button>
+      <button id="pause" class="xl sec">Pause ⏸</button>
+      <button id="next" class="ghost">Next ⏭</button>
+    </div>
+
+    <div class="row" style="justify-content:space-between">
+      <div class="pill">Timer: <b><span id="left">20</span>s</b></div>
+      <div class="bar" style="flex:1;max-width:400px"><i id="prog"></i></div>
+    </div>
+    <div class="meta" id="hint">We’ll show a new word every 20 seconds.</div>
+  </section>
+
+  <section id="settingsScreen" class="card grid two" style="display:none">
+    <div style="grid-column:1 / -1; display:flex; justify-content:space-between; align-items:center; gap:10px">
+      <h2 style="margin:0">Settings ⚙️</h2>
+      <button id="backBtn" class="ghost">← Back</button>
+    </div>
+    <div>
+      <h3 style="margin:0 0 6px">Edit word list</h3>
+      <textarea id="list" rows="8"></textarea>
+      <div class="row" style="justify-content:flex-end">
+        <button id="apply" class="sec">Apply List</button>
+        <button id="defaultBtn" class="ghost">Reset to Photo Words</button>
+      </div>
+      <p class="meta">Tip: one word per line or comma-separated.</p>
+    </div>
+    <div>
+      <h3 style="margin:0 0 6px">Sentence style</h3>
+      <select id="style">
+        <option value="normal">Simple (present)</option>
+        <option value="question">Question style</option>
+        <option value="kidfun">Kid-fun style</option>
+      </select>
+      <p class="meta">You can always edit sentences in the code later.</p>
+    </div>
+    <div style="grid-column:1 / -1">
+      <h3 style="margin:6px 0">Word colours</h3>
+      <p class="meta" style="margin-top:0">Words in these groups will display with the matching colour. One word per line or comma-separated.</p>
+      <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:10px">
+        <div>
+          <div class="legend"><span class="swatch" style="background:#ff6b6b"></span><b>Red</b></div>
+          <textarea id="colRed" rows="4" style="background:#3a1a1a;color:#fff">here, of, too, want, your, have, I've, where</textarea>
+        </div>
+        <div>
+          <div class="legend"><span class="swatch" style="background:#ff9f43"></span><b>Orange</b></div>
+          <textarea id="colOrange" rows="4" style="background:#3a220f;color:#fff">and, can, mum, a, love, carer, you</textarea>
+        </div>
+        <div>
+          <div class="legend"><span class="swatch" style="background:#ffd93d"></span><b>Yellow</b></div>
+          <textarea id="colYellow" rows="4" style="background:#3a2e0f;color:#fff">see, she, is, they, has, that, saw, we, look, with</textarea>
+        </div>
+        <div>
+          <div class="legend"><span class="swatch" style="background:#7cd992"></span><b>Green</b></div>
+          <textarea id="colGreen" rows="4" style="background:#18321f;color:#fff">all, come, her, this, are, his</textarea>
+        </div>
+        <div>
+          <div class="legend"><span class="swatch" style="background:#5aa0ff"></span><b>Blue</b></div>
+          <textarea id="colBlue" rows="4" style="background:#0f2340;color:#fff">when, day, was, no, said, play</textarea>
+        </div>
+        <div>
+          <div class="legend"><span class="swatch" style="background:#b28bff"></span><b>Purple</b></div>
+          <textarea id="colPurple" rows="4" style="background:#24123f;color:#fff">do, what, there, be, so, out, it's, down, I'm, going, put, were, park, one</textarea>
+        </div>
+      </div>
+      <div class="row" style="justify-content:flex-end">
+        <button id="applyColours" class="sec">Apply Colours</button>
+      </div>
+    </div>
+    <div>
+      <h3 style="margin:0 0 6px">Animals</h3>
+      <label style="display:flex;gap:8px;align-items:center"><input id="animalsToggle" type="checkbox" checked> <span>Show animal stickers on new words</span></label>
+      <label class="meta" for="animals">Animal emojis (comma-separated)</label>
+      <textarea id="animals" rows="3">🐆, 🐅, 🐯, 🐾, 🦁</textarea>
+    </div>
+    <div>
+      <h3 style="margin:0 0 6px">Timing</h3>
+      <label class="meta" for="interval">Auto-advance every</label>
+      <div class="row" style="justify-content:flex-start">
+        <input id="interval" type="number" min="5" max="60" value="20" style="width:90px"> <span class="meta">seconds</span>
+      </div>
+      <p class="meta">Timer continues where it left off when you close Settings.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ====== Words read from the photo (best-effort) ======
+   You can edit these in the UI. */
+const PHOTO_WORDS = [
+  // Red sheet — “rainbow words”
+  "here","of","too","want","your","have","I've","where",
+  // Little yellows
+  "he","the",
+  // Reds / oranges
+  "and","can","mum","a","love","carer","you",
+  // Yellows / greens
+  "see","she","is","they","has","that","saw","we","look","with",
+  // Light greens / teals
+  "all","come","her","this","are","his",
+  // Blues
+  "when","day","was","no","said","play",
+  // Purples
+  "do","what","there","be","so","out",
+  // Dark purples (bottom)
+  "it's","down","I'm","going","put","were","park","one"
+];
+// De-duplicate + keep order:
+const BASE_WORDS = [...new Set(PHOTO_WORDS)];
+
+/* Sentences (≤8 words). Provide hand-crafted ones where helpful.
+   Any missing word gets a safe generic sentence. */
+const SENTENCE_MAP = {
+  "here":"I am here with you.",
+  "of":"A cup of tea, of course.",
+  "too":"I want to play too.",
+  "want":"I want that red ball.",
+  "your":"Your hat looks very cool.",
+  "have":"I have a kind heart.",
+  "I've":"I've got a big smile.",
+  "where":"Where is the blue ball?",
+  "he":"He is my friend today.",
+  "the":"The dog ran to me.",
+  "and":"Mum and I draw art.",
+  "can":"I can jump so high.",
+  "mum":"Mum gives the best hugs.",
+  "a":"I saw a bright star.",
+  "love":"I love you so much.",
+  "carer":"My carer helps me learn.",
+  "you":"You are brave and kind.",
+  "see":"I see a yellow bird.",
+  "she":"She is very kind today.",
+  "is":"This is our happy place.",
+  "they":"They play with us today.",
+  "has":"She has a pink hat.",
+  "that":"I like that one best.",
+  "saw":"We saw dolphins at Manly.",
+  "we":"We can win this game.",
+  "look":"Look at the rainbow sky!",
+  "with":"Come with me to play.",
+  "all":"All my friends are here.",
+  "come":"Come and dance with me.",
+  "her":"I gave her a sticker.",
+  "this":"This is a fun puzzle.",
+  "are":"You are my best helper.",
+  "his":"His bike is bright red.",
+  "when":"When do we start, Dad?",
+  "day":"This day feels so sunny.",
+  "was":"It was a great game.",
+  "no":"No worries, try again gently.",
+  "said":"She said yes to play.",
+  "play":"Let’s play tag after school.",
+  "do":"I can do this now.",
+  "what":"What is your favourite colour?",
+  "there":"There it is, well done!",
+  "be":"Be brave and be kind.",
+  "so":"I am so, so proud.",
+  "out":"We go out to play.",
+  "it's":"It's time for story night.",
+  "down":"Please sit down for lunch.",
+  "I'm":"I'm ready to read now.",
+  "going":"We are going to park.",
+  "put":"Put the book away please.",
+  "were":"We were laughing at lunch.",
+  "park":"Let’s go to the park.",
+  "one":"I found one shiny shell."
+};
+
+/* ====== UI & game logic ====== */
+const $ = s => document.querySelector(s);
+const wordEl = $('#word'), sentEl = $('#sentence'), idxEl = $('#idx'), totalEl = $('#total');
+const leftEl = $('#left'), progEl = $('#prog');
+  const startBtn = $('#start'), pauseBtn = $('#pause'), nextBtn = $('#next'), prevBtn = $('#prev');
+  const listBox = $('#list'), applyBtn = $('#apply'), defaultBtn = $('#defaultBtn');
+  const intervalInput = $('#interval'), styleSel = $('#style');
+  const mainScreen = $('#mainScreen'), settingsScreen = $('#settingsScreen');
+  const settingsBtn = $('#settingsBtn'), backBtn = $('#backBtn');
+  const colInputs = {
+    Red: $('#colRed'), Orange: $('#colOrange'), Yellow: $('#colYellow'),
+    Green: $('#colGreen'), Blue: $('#colBlue'), Purple: $('#colPurple')
+  };
+  const applyColoursBtn = $('#applyColours');
+  const stickersLayer = $('#stickers');
+  const animalsInput = $('#animals');
+  const animalsToggle = $('#animalsToggle');
+
+let words = [...BASE_WORDS], i = 0, running = false, interval = 20, tick, left = interval;
+
+// Colour groups and palette
+const COLOR_PALETTE = {
+  Red:'#ff6b6b', Orange:'#ff9f43', Yellow:'#ffd93d', Green:'#7cd992', Blue:'#5aa0ff', Purple:'#b28bff'
+};
+let wordToColor = {};
+let animalList = ['🐆','🐅','🐯','🐾','🦁'];
+
+// ====== Persistence (localStorage) ======
+const SETTINGS_KEY = 'rainbow-word-settings-v1';
+
+function collectSettings(){
+  return {
+    words,
+    colGroups: Object.fromEntries(Object.entries(colInputs).map(([k, el]) => [k, el.value])),
+    sentenceStyle: styleSel.value,
+    interval: +intervalInput.value || 20,
+    animals: animalsInput.value,
+    animalsToggle: animalsToggle.checked,
+    index: i
+  };
+}
+function applySettings(s){
+  if (!s) return;
+  if (Array.isArray(s.words) && s.words.length){ words = s.words; writeListToBox(words); }
+  if (s.colGroups){
+    for (const [k, val] of Object.entries(s.colGroups)){
+      if (colInputs[k]) colInputs[k].value = val;
+    }
+  }
+  rebuildWordColours();
+  if (s.sentenceStyle){ styleSel.value = s.sentenceStyle; }
+  if (typeof s.interval === 'number'){ intervalInput.value = s.interval; interval = s.interval; left = interval; }
+  if (typeof s.animals === 'string'){ animalsInput.value = s.animals; animalList = parseList(animalsInput.value); }
+  if (typeof s.animalsToggle === 'boolean'){ animalsToggle.checked = s.animalsToggle; }
+  if (typeof s.index === 'number'){ i = Math.max(0, Math.min(s.index, words.length-1)); }
+}
+function saveSettings(){
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(collectSettings())); } catch(e){}
+}
+function loadSettings(){
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    applySettings(s);
+  } catch(e){}
+}
+
+function parseList(text){
+  return [...new Set(text.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean))];
+}
+function rebuildWordColours(){
+  wordToColor = {};
+  for (const [group, el] of Object.entries(colInputs)){
+    const colour = COLOR_PALETTE[group];
+    const items = parseList(el.value);
+    items.forEach(w=>{ wordToColor[w] = colour; });
+  }
+}
+
+function escapeRegExp(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+
+function makeSentence(word){
+  if (SENTENCE_MAP[word]) return SENTENCE_MAP[word];
+  const w = word.toLowerCase();
+  // Generic fallbacks (≤8 words)
+  const patterns = {
+    normal: `Please use the word "${word}" now.`,
+    question: `Can you say "${word}" for me?`,
+    kidfun: `Say "${word}" with a big smile!`
+  };
+  return patterns[styleSel.value] || patterns.normal;
+}
+function highlight(word, sentence){
+  const re = new RegExp(`\\b${escapeRegExp(word.replace(/’/g,"'"))}\\b`,'i');
+  const colour = wordToColor[word] || '#ffd54d';
+  return sentence.replace(re, m=>`<mark style="background:${colour}33;border-color:${colour}77">${m}</mark>`);
+}
+function show(){
+  const w = words[i];
+  wordEl.textContent = w;
+  // trigger pop animation
+  wordEl.classList.remove('pop');
+  void wordEl.offsetWidth; // reflow
+  wordEl.classList.add('pop');
+  // colorize big word
+  const colour = wordToColor[w];
+  if (colour){
+    wordEl.style.setProperty('--wordColor', colour);
+    wordEl.classList.add('colorized');
+  } else {
+    wordEl.classList.remove('colorized');
+    wordEl.style.removeProperty('--wordColor');
+  }
+  const s = makeSentence(w);
+  sentEl.innerHTML = highlight(w, s);
+  sentEl.classList.remove('fade');
+  void sentEl.offsetWidth;
+  sentEl.classList.add('fade');
+  idxEl.textContent = (i+1);
+  totalEl.textContent = words.length;
+  left = interval;
+  leftEl.textContent = left;
+  progEl.style.width = '0%';
+  spawnSticker();
+  // persist current state
+  saveSettings();
+}
+function step(){
+  if(!running) return;
+  left--; if(left<0) left=0;
+  leftEl.textContent = left;
+  const pct = 100*(1-left/interval);
+  progEl.style.width = `${pct}%`;
+  if (left<=0){ next(); }
+}
+function startCycle(){
+  clearInterval(tick);
+  running = true;
+  tick = setInterval(step, 1000);
+  pauseBtn.textContent = 'Pause ⏸';
+  document.body.classList.add('running');
+}
+function pauseCycle(){
+  running = false; clearInterval(tick);
+  pauseBtn.textContent = 'Resume ▶';
+  document.body.classList.remove('running');
+}
+function next(){
+  i = (i+1) % words.length; show();
+}
+function prev(){
+  i = (i-1+words.length) % words.length; show();
+}
+
+function readListFromBox(){
+  const raw = listBox.value.trim();
+  const arr = raw.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
+  return [...new Set(arr)];
+}
+
+function writeListToBox(arr){
+  listBox.value = arr.join('\n');
+}
+
+startBtn.addEventListener('click', ()=>{ interval = +intervalInput.value || 20; show(); startCycle(); });
+pauseBtn.addEventListener('click', ()=> running ? pauseCycle() : startCycle());
+nextBtn.addEventListener('click', ()=>{ next(); if(!running) show(); });
+prevBtn.addEventListener('click', ()=>{ prev(); if(!running) show(); });
+intervalInput.addEventListener('change', ()=>{ interval = Math.max(5, Math.min(60, +intervalInput.value||20)); left = interval; leftEl.textContent = left; saveSettings(); });
+
+  // Screen toggling
+  function showMain(){
+    settingsScreen.style.display = 'none';
+    mainScreen.style.display = '';
+  }
+  function showSettings(){
+    // Pause when entering settings
+    if (running) pauseCycle();
+    mainScreen.style.display = 'none';
+    settingsScreen.style.display = '';
+  }
+  settingsBtn.addEventListener('click', showSettings);
+  backBtn.addEventListener('click', showMain);
+
+  // Apply colours from settings
+  applyColoursBtn.addEventListener('click', ()=>{ rebuildWordColours(); show(); });
+  animalsInput.addEventListener('change', ()=>{
+    const arr = parseList(animalsInput.value);
+    if (arr.length) animalList = arr;
+    saveSettings();
+  });
+  animalsToggle.addEventListener('change', ()=>{ saveSettings(); });
+
+applyBtn.addEventListener('click', ()=>{
+  const arr = readListFromBox();
+  if (arr.length){ words = arr; i = 0; show(); }
+});
+defaultBtn.addEventListener('click', ()=>{ words = [...BASE_WORDS]; i=0; writeListToBox(words); show(); });
+
+styleSel.addEventListener('change', ()=> show());
+
+/* init */
+loadSettings();
+interval = +intervalInput.value || 20;
+writeListToBox(words);
+$('#hint').textContent = 'Auto-advance is set to 20 seconds. Use Pause to talk about the sentence.';
+rebuildWordColours();
+animalList = parseList(animalsInput.value);
+
+// Stickers logic
+function spawnSticker(){
+  if (!animalsToggle.checked) return;
+  if (!stickersLayer) return;
+  const emoji = animalList[Math.floor(Math.random()*animalList.length)] || '🐆';
+  const el = document.createElement('div');
+  el.className = 'sticker run';
+  el.textContent = emoji;
+  const x = 10 + Math.random()*80; // percent across
+  const y = 60 + Math.random()*20; // start lower half
+  el.style.left = x + '%';
+  el.style.top = y + '%';
+  stickersLayer.appendChild(el);
+  setTimeout(()=>{ el.remove(); }, 1800);
+}
+</script>
+</body>
+</html>
