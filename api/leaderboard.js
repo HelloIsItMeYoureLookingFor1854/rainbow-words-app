@@ -1,15 +1,28 @@
-// Serverless function for leaderboard using Vercel KV
-// Requires Vercel KV to be configured in the project (Environment Variables bound automatically)
+// Serverless function for leaderboard using Supabase
+// Requires SUPABASE_URL and SUPABASE_SERVICE_ROLE environment variables in Vercel
 
-import { kv } from '@vercel/kv';
+import { createClient } from '@supabase/supabase-js';
 
-const KEY = 'rainbow-words:leaderboard';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
+
+const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE)
+  : null;
 
 export default async function handler(req, res){
   try{
+    if (!supabase){
+      return res.status(500).json({ error: 'Server error', message: 'Supabase not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE in Vercel.' });
+    }
     if (req.method === 'GET'){
-      const list = (await kv.get(KEY)) || [];
-      const sorted = [...list].sort((a,b)=> (b.right - b.wrong) - (a.right - a.wrong) || b.right - a.right);
+      const { data, error } = await supabase
+        .from('scores')
+        .select('name, "right", "wrong", created_at')
+        .limit(200);
+      if (error) return res.status(500).json({ error: 'DB error', message: error.message });
+      const normalized = (data||[]).map(r=>({ name: r.name, right: r.right ?? r["right"], wrong: r.wrong ?? r["wrong"], at: r.created_at }));
+      const sorted = normalized.sort((a,b)=> (b.right - b.wrong) - (a.right - a.wrong) || b.right - a.right);
       return res.status(200).json({ top: sorted.slice(0, 10) });
     }
     if (req.method === 'POST'){
@@ -17,12 +30,12 @@ export default async function handler(req, res){
       const entry = {
         name: String(name||'Anonymous').slice(0, 40),
         right: Math.max(0, parseInt(right||0,10)),
-        wrong: Math.max(0, parseInt(wrong||0,10)),
-        at: Date.now()
+        wrong: Math.max(0, parseInt(wrong||0,10))
       };
-      const list = (await kv.get(KEY)) || [];
-      list.push(entry);
-      await kv.set(KEY, list);
+      const { error } = await supabase
+        .from('scores')
+        .insert([{ name: entry.name, "right": entry.right, "wrong": entry.wrong }]);
+      if (error) return res.status(500).json({ error: 'DB error', message: error.message });
       return res.status(201).json({ ok:true });
     }
     return res.status(405).json({ error:'Method Not Allowed' });
