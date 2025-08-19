@@ -79,6 +79,20 @@
     .row>button{flex:1 1 100%;min-width:0}
     .big{font-size:clamp(32px,18vw,56px)}
   }
+
+  /* Leaderboard styles */
+  .scorecard{display:grid;gap:10px}
+  .score-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .score-box{background:#3a2a14;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px;text-align:center}
+  .score-num{font-size:clamp(22px,6vw,28px);font-weight:900}
+  .buttons-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .btn-right{background:#6be07a;box-shadow:0 6px 0 #3ea04b;color:#102312}
+  .btn-wrong{background:#ff6b6b;box-shadow:0 6px 0 #b04444;color:#2a0d0d}
+  .lb-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+  .lb-item{display:flex;align-items:center;justify-content:space-between;background:#3a240f;border:1px solid rgba(255,255,255,.1);padding:10px 12px;border-radius:12px}
+  .medal{margin-right:8px}
+  .name{font-weight:800}
+  .score{opacity:.9}
 </style>
 </head>
 <body>
@@ -89,6 +103,7 @@
       <div class="row" style="gap:10px">
         <div class="pill">Word <span id="idx">0</span>/<span id="total">0</span></div>
         <button id="settingsBtn" class="ghost">Settings ⚙️</button>
+        <button id="scoreBtn" class="ghost">Scoreboard 🏆</button>
       </div>
     </div>
 
@@ -108,6 +123,40 @@
       <div class="bar" style="flex:1;max-width:400px"><i id="prog"></i></div>
     </div>
     <div class="meta" id="hint">We’ll show a new word every 20 seconds.</div>
+  </section>
+
+  <section id="scoreScreen" class="card" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h2 style="margin:.2rem 0">Score & Leaderboard 🏆</h2>
+      <div class="row" style="gap:10px">
+        <button id="backToMain" class="ghost">← Back</button>
+      </div>
+    </div>
+    <div class="scorecard">
+      <div class="grid" style="grid-template-columns:1fr .9fr;gap:12px">
+        <div class="grid" style="gap:10px">
+          <label class="meta">Player name</label>
+          <input id="playerName" type="text" placeholder="Enter player name" />
+          <div class="score-grid">
+            <div class="score-box"><div class="meta">Right ✅</div><div id="rightCount" class="score-num">0</div></div>
+            <div class="score-box"><div class="meta">Wrong ❌</div><div id="wrongCount" class="score-num">0</div></div>
+          </div>
+          <div class="buttons-row">
+            <button id="markRight" class="btn-right">Mark Right ✅</button>
+            <button id="markWrong" class="btn-wrong">Mark Wrong ❌</button>
+            <button id="saveScore" class="sec">Save to Leaderboard 💾</button>
+            <button id="resetScore" class="ghost">Reset</button>
+          </div>
+        </div>
+        <div class="grid" style="gap:10px">
+          <div style="display:flex;align-items:center;gap:8px"><span>Leaderboard</span><span class="meta">(Top 10)</span></div>
+          <ol id="leaderboard" class="lb-list"></ol>
+          <div class="row" style="justify-content:flex-end">
+            <button id="refreshLB" class="ghost">Refresh ↻</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section id="settingsScreen" class="card grid two" style="display:none">
@@ -274,6 +323,18 @@ const leftEl = $('#left'), progEl = $('#prog');
   const intervalInput = $('#interval'), styleSel = $('#style');
   const mainScreen = $('#mainScreen'), settingsScreen = $('#settingsScreen');
   const settingsBtn = $('#settingsBtn'), backBtn = $('#backBtn');
+  const scoreScreen = $('#scoreScreen');
+  const scoreBtn = $('#scoreBtn');
+  const backToMain = $('#backToMain');
+  const rightEl = $('#rightCount');
+  const wrongEl = $('#wrongCount');
+  const markRightBtn = $('#markRight');
+  const markWrongBtn = $('#markWrong');
+  const saveScoreBtn = $('#saveScore');
+  const resetScoreBtn = $('#resetScore');
+  const refreshLBBtn = $('#refreshLB');
+  const leaderboardEl = $('#leaderboard');
+  const playerNameInput = $('#playerName');
   const colInputs = {
     Red: $('#colRed'), Orange: $('#colOrange'), Yellow: $('#colYellow'),
     Green: $('#colGreen'), Blue: $('#colBlue'), Purple: $('#colPurple')
@@ -284,6 +345,7 @@ const leftEl = $('#left'), progEl = $('#prog');
   const animalsToggle = $('#animalsToggle');
 
 let words = [...BASE_WORDS], i = 0, running = false, interval = 20, tick, left = interval;
+let rightCount = 0, wrongCount = 0;
 
 // Colour groups and palette
 const COLOR_PALETTE = {
@@ -439,6 +501,7 @@ intervalInput.addEventListener('change', ()=>{ interval = Math.max(5, Math.min(6
   // Screen toggling
   function showMain(){
     settingsScreen.style.display = 'none';
+    scoreScreen.style.display = 'none';
     mainScreen.style.display = '';
   }
   function showSettings(){
@@ -447,8 +510,17 @@ intervalInput.addEventListener('change', ()=>{ interval = Math.max(5, Math.min(6
     mainScreen.style.display = 'none';
     settingsScreen.style.display = '';
   }
+  function showScore(){
+    if (running) pauseCycle();
+    mainScreen.style.display = 'none';
+    settingsScreen.style.display = 'none';
+    scoreScreen.style.display = '';
+    fetchLeaderboard();
+  }
   settingsBtn.addEventListener('click', showSettings);
   backBtn.addEventListener('click', showMain);
+  scoreBtn.addEventListener('click', showScore);
+  backToMain.addEventListener('click', showMain);
 
   // Apply colours from settings
   applyColoursBtn.addEventListener('click', ()=>{ rebuildWordColours(); show(); });
@@ -466,6 +538,44 @@ applyBtn.addEventListener('click', ()=>{
 defaultBtn.addEventListener('click', ()=>{ words = [...BASE_WORDS]; i=0; writeListToBox(words); show(); });
 
 styleSel.addEventListener('change', ()=> show());
+
+  // ====== Scoreboard logic ======
+  function updateScoreUI(){
+    rightEl.textContent = rightCount;
+    wrongEl.textContent = wrongCount;
+  }
+  markRightBtn.addEventListener('click', ()=>{ rightCount++; updateScoreUI(); });
+  markWrongBtn.addEventListener('click', ()=>{ wrongCount++; updateScoreUI(); });
+  resetScoreBtn.addEventListener('click', ()=>{ rightCount = 0; wrongCount = 0; updateScoreUI(); });
+
+  async function fetchLeaderboard(){
+    try{
+      const res = await fetch('/api/leaderboard');
+      const data = await res.json();
+      const top = (data?.top||[]).slice(0,10);
+      leaderboardEl.innerHTML = '';
+      top.forEach((row, idx)=>{
+        const li = document.createElement('li');
+        li.className = 'lb-item';
+        const medal = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'🎖️';
+        li.innerHTML = `<span><span class="medal">${medal}</span><span class="name">${row.name||'Anon'}</span></span><span class="score">${row.right} ✅ / ${row.wrong} ❌</span>`;
+        leaderboardEl.appendChild(li);
+      });
+    }catch(e){ /* ignore */ }
+  }
+  refreshLBBtn.addEventListener('click', fetchLeaderboard);
+
+  async function saveScore(){
+    const name = (playerNameInput.value||'').trim() || 'Anonymous';
+    try{
+      await fetch('/api/leaderboard',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ name, right: rightCount, wrong: wrongCount })
+      });
+      await fetchLeaderboard();
+    }catch(e){ /* ignore */ }
+  }
+  saveScoreBtn.addEventListener('click', saveScore);
 
 /* init */
 loadSettings();

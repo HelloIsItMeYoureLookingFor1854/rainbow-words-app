@@ -1,0 +1,9 @@
+{
+  "name": "rainbow-words-app",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@vercel/kv": "^1.0.0"
+  }
+}
+
