@@ -60,6 +60,25 @@
   .sticker{position:absolute;font-size:38px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));opacity:0;transform:translateY(10px) scale(.9)}
   @keyframes floatUp{0%{opacity:0;transform:translateY(12px) scale(.9)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translateY(-22px) scale(1)} }
   .sticker.run{animation:floatUp 1700ms ease-out forwards}
+  
+  /* Responsive tweaks for mobile */
+  @media (max-width: 680px){
+    .wrap{padding:12px;gap:10px}
+    .card{padding:12px}
+    h1{font-size:clamp(18px,6vw,26px)}
+    .big{font-size:clamp(36px,14vw,64px)}
+    .sent{font-size:clamp(18px,5.2vw,24px)}
+    .row{gap:8px}
+    .row>button{flex:1 1 48%;min-width:140px}
+    .xl{font-size:1.05rem;padding:14px 18px}
+    .two{grid-template-columns:1fr}
+    .pill{font-size:.95rem}
+    textarea,input,select{font-size:16px}
+  }
+  @media (max-width: 360px){
+    .row>button{flex:1 1 100%;min-width:0}
+    .big{font-size:clamp(32px,18vw,56px)}
+  }
 </style>
 </head>
 <body>
